@@ -6,7 +6,7 @@
  *
  * @author      Mike Jolley
  * @category    Core
- * @package     wp-job-manager
+ * @package     Job Manager/Template
  * @version     1.25.3
  */
 
@@ -146,9 +146,7 @@ function get_the_job_status( $post = null ) {
 	$post     = get_post( $post );
 	$status   = $post->post_status;
 	$statuses = get_job_listing_post_statuses();
-	if ( 'preview' === $status ) {
-		$status = 'draft';
-	}
+
 	if ( isset( $statuses[ $status ] ) ) {
 		$status = $statuses[ $status ];
 	} else {
@@ -246,7 +244,7 @@ function get_the_job_application_method( $post = null ) {
 		$method->email     = antispambot( $apply );
 
 		// translators: %1$s is the job listing title; %2$s is the URL for the current WordPress instance.
-		$method->subject = apply_filters( 'job_manager_application_email_subject', sprintf( esc_html__( 'Application via %1$s listing on %2$s', 'wp-job-manager' ), esc_html( $post->post_title ), esc_url( home_url() ) ), $post );
+		$method->subject = apply_filters( 'job_manager_application_email_subject', sprintf( esc_html__( 'Application via "%1$s" listing on %2$s', 'wp-job-manager' ), esc_html( $post->post_title ), esc_url( home_url() ) ), $post );
 	} else {
 		if ( strpos( $apply, 'http' ) !== 0 ) {
 			$apply = 'http://' . $apply;
@@ -360,58 +358,64 @@ function wpjm_output_job_listing_structured_data( $post = null ) {
  * @param WP_Post|int|null $post
  * @return bool|array False if functionality is disabled; otherwise array of structured data.
  */
+
 function wpjm_get_job_listing_structured_data( $post = null ) {
 	$post = get_post( $post );
 
 	if ( ! $post || 'job_listing' !== $post->post_type ) {
 		return false;
 	}
-
-	$data               = array();
-	$data['@context']   = 'http://schema.org/';
-	$data['@type']      = 'JobPosting';
-	$data['datePosted'] = get_post_time( 'c', false, $post );
+//убираем разметку вакансии
+//	$data               = array();
+//	$data['@context']   = 'http://schema.org/';
+//	$data['@type']      = 'JobPosting';
+//	$data['datePosted'] = get_post_time( 'c', false, $post );
 
 	$job_expires = get_post_meta( $post->ID, '_job_expires', true );
 	if ( ! empty( $job_expires ) ) {
 		$data['validThrough'] = date( 'c', strtotime( $job_expires ) );
 	}
-
-	$data['title']       = wp_strip_all_tags( wpjm_get_the_job_title( $post ) );
+//убираем title и description вакансии
+	$data['title']       = wp_strip_all_tags( wpjm_get_the_job_title($post) );
+	//$data['title']       =  wpjm_get_the_job_title(wp_title());//попытка изменить title
+	//$data['title']       = wp_strip_all_tags( wpjm_get_the_job_title(wp_title()) );//попытка изменить title
 	$data['description'] = wpjm_get_the_job_description( $post );
-
+	//$data['description'] = wp_description(  );//попытка изменить description
+	
 	$employment_types = wpjm_get_job_employment_types();
 	if ( ! empty( $employment_types ) ) {
-		$data['employmentType'] = $employment_types;
+	//	$data['employmentType'] = $employment_types;
 	}
-
-	$data['hiringOrganization']          = array();
-	$data['hiringOrganization']['@type'] = 'Organization';
-	$data['hiringOrganization']['name']  = get_the_company_name( $post );
+//убираем разметку вакансии
+	//$data['hiringOrganization']          = array();
+	//$data['hiringOrganization']['@type'] = 'Organization';
+	//$data['hiringOrganization']['name']  = get_the_company_name( $post );
 
 	$company_website = get_the_company_website( $post );
 	if ( $company_website ) {
-		$data['hiringOrganization']['sameAs'] = $company_website;
-		$data['hiringOrganization']['url']    = $company_website;
+	    //убираем сайт организатора из кода
+		//$data['hiringOrganization']['sameAs'] = $company_website;
+		//$data['hiringOrganization']['url']    = $company_website;
 	}
 
 	$company_logo = get_the_company_logo( $post, 'full' );
 	if ( $company_logo ) {
-		$data['hiringOrganization']['logo'] = $company_logo;
+	//	$data['hiringOrganization']['logo'] = $company_logo;
 	}
-
-	$data['identifier']          = array();
-	$data['identifier']['@type'] = 'PropertyValue';
-	$data['identifier']['name']  = get_the_company_name( $post );
-	$data['identifier']['value'] = get_the_guid( $post );
+//убираем разметку вакансии
+//	$data['identifier']          = array();
+//	$data['identifier']['@type'] = 'PropertyValue';
+//	$data['identifier']['name']  = get_the_company_name( $post );
+//	$data['identifier']['value'] = get_the_guid( $post );
 
 	$location = get_the_job_location( $post );
 	if ( ! empty( $location ) ) {
-		$data['jobLocation']            = array();
-		$data['jobLocation']['@type']   = 'Place';
-		$data['jobLocation']['address'] = wpjm_get_job_listing_location_structured_data( $post );
+	    //убираем разметку вакансии
+//		$data['jobLocation']            = array();
+//		$data['jobLocation']['@type']   = 'Place';
+//		$data['jobLocation']['address'] = wpjm_get_job_listing_location_structured_data( $post );
 		if ( empty( $data['jobLocation']['address'] ) ) {
-			$data['jobLocation']['address'] = $location;
+//			$data['jobLocation']['address'] = $location;
 		}
 	}
 
@@ -491,7 +495,8 @@ function wpjm_get_job_listing_location_structured_data( $post ) {
  * @param int|WP_Post $post
  */
 function wpjm_the_job_title( $post = null ) {
-	$job_title = wpjm_get_the_job_title( $post );
+	//$job_title = wpjm_get_the_job_title( $post );//попытка изменить title
+	//$job_title = wpjm_get_the_job_title( wp_title() );
 	if ( $job_title ) {
 		echo wp_kses_post( $job_title );
 	}
@@ -510,7 +515,8 @@ function wpjm_get_the_job_title( $post = null ) {
 		return null;
 	}
 
-	$title = wp_strip_all_tags( get_the_title( $post ) );
+	//$title = wp_strip_all_tags( get_the_title( $post ) );
+	$title = wp_strip_all_tags( wp_title($post) );
 
 	/**
 	 * Filter for the job title.
@@ -520,6 +526,7 @@ function wpjm_get_the_job_title( $post = null ) {
 	 * @param int|WP_Post $post
 	 */
 	return apply_filters( 'wpjm_the_job_title', $title, $post );
+
 }
 
 /**
@@ -531,7 +538,7 @@ function wpjm_get_the_job_title( $post = null ) {
 function wpjm_the_job_description( $post = null ) {
 	$job_description = wpjm_get_the_job_description( $post );
 	if ( $job_description ) {
-		WP_Job_Manager_Post_Types::output_kses_post( $job_description );
+		echo wp_kses_post( $job_description );
 	}
 }
 
@@ -548,13 +555,13 @@ function wpjm_get_the_job_description( $post = null ) {
 		return null;
 	}
 
-	$description = apply_filters( 'the_job_description', wp_kses_post( $post->post_content ) );
+	$description = apply_filters( 'the_job_description', get_the_content( $post ) );
 
 	/**
 	 * Filter for the job description.
 	 *
 	 * @since 1.28.0
-	 * @param string      $job_description Job description to be filtered.
+	 * @param string      $title Title to be filtered.
 	 * @param int|WP_Post $post
 	 */
 	return apply_filters( 'wpjm_the_job_description', $description, $post );
@@ -787,7 +794,7 @@ function the_job_location( $map_link = true, $post = null ) {
 			echo wp_kses_post(
 				apply_filters(
 					'the_job_location_map_link',
-					'<a class="google_map_link" href="' . esc_url( 'http://maps.google.com/maps?q=' . rawurlencode( wp_strip_all_tags( $location ) ) . '&zoom=14&size=512x512&maptype=roadmap&sensor=false' ) . '">' . esc_html( wp_strip_all_tags( $location ) ) . '</a>',
+					'<a class="google_map_link" href="' . esc_url( 'http://maps.google.com/maps?q=' . rawurlencode( wp_strip_all_tags( $location ) ) . '&zoom=14&size=512x512&maptype=roadmap&sensor=false' ) . '" target="_blank">' . esc_html( wp_strip_all_tags( $location ) ) . '</a>',
 					$location, $post
 				)
 			);
@@ -1100,7 +1107,7 @@ function the_company_twitter( $before = '', $after = '', $echo = true, $post = n
 		return null;
 	}
 
-	$company_twitter = $before . '<a href="' . esc_url( 'https://twitter.com/' . $company_twitter ) . '" class="company_twitter">' . esc_html( wp_strip_all_tags( $company_twitter ) ) . '</a>' . $after;
+	$company_twitter = $before . '<a href="' . esc_url( 'https://twitter.com/' . $company_twitter ) . '" class="company_twitter" target="_blank">' . esc_html( wp_strip_all_tags( $company_twitter ) ) . '</a>' . $after;
 
 	if ( $echo ) {
 		echo wp_kses_post( $company_twitter );
